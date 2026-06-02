@@ -172,6 +172,14 @@
     letter-spacing: 0.12em;
   }
   #start-overlay p { max-width: 460px; opacity: 0.8; line-height: 1.6; font-size: clamp(14px,3vw,17px); }
+  .support-link {
+    color: var(--ink); opacity: 0.5;
+    font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: opacity .2s ease, border-color .2s ease;
+  }
+  .support-link:hover { opacity: 0.9; border-bottom-color: rgba(250,249,247,0.5); }
   .hidden { display: none !important; }
 
   /* ---- Sound mixer ---- */
@@ -244,6 +252,7 @@
        25 minutes of focused heat, then 5 minutes of cool refreshment.<br>
        Work alongside him.</p>
     <button id="beginBtn" class="primary">Enter the sauna</button>
+    <a class="support-link" href="https://github.com/sponsors/dadachi" target="_blank" rel="noopener noreferrer">♡ Support</a>
   </div>
 
   <div id="mixer" class="hidden">
