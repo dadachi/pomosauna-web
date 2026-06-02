@@ -1,0 +1,46 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  deployment_status: # fires when GitHub Pages finishes deploying
+
+permissions:
+  contents: read
+
+jobs:
+  # #1 — fail the build if any colour falls outside Refactoring UI Palette 6
+  palette:
+    if: github.event_name != 'deployment_status'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: python3 scripts/check-palette.py index.html
+
+  # #3 — after Pages deploys, verify the live site is healthy
+  smoke:
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    env:
+      # pass via env (not inline ${{ }}) so the value can't be shell-injected
+      ENV_URL: ${{ github.event.deployment_status.environment_url }}
+    steps:
+      - name: Smoke-test the live site
+        run: |
+          target="${ENV_URL:-https://dadachi.github.io/pomosauna-web/}"
+          echo "Checking $target"
+          code=000
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sSL -o body.html -w "%{http_code}" "$target" || echo 000)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          test "$code" = "200"
+          grep -q "<title>PomoSauna" body.html
+          grep -q "goatcounter" body.html
+          echo "✓ live site healthy ($target)"

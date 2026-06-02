@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Fail if a file uses any colour outside Refactoring UI Palette 6.
+
+Only the RGB base is checked; alpha (opacity) is ignored, since transparency is
+compositing rather than a distinct colour. Covers hex literals and rgb()/rgba()
+triples (including the static triples inside template literals).
+
+Usage: python3 scripts/check-palette.py [file ...]   (defaults to index.html)
+"""
+import re
+import sys
+
+# Refactoring UI — Palette 6: Red, Yellow, Warm Grey, Cyan, Lime Green
+PALETTE_HEX = """
+610404 780A0A 911111 A61B1B BA2525 D64545 E66A6A F29B9B FACDCD FFEEEE
+8D2B0B B44D12 CB6E17 DE911D F0B429 F7C948 FADB5F FCE588 FFF3C4 FFFBEA
+27241D 423D33 504A40 625D52 857F72 A39E93 B8B2A7 D3CEC4 E8E6E1 FAF9F7
+044E54 0A6C74 0E7C86 14919B 2CB1BC 38BEC9 54D1DB 87EAF2 BEF8FD E0FCFF
+2B4005 42600C 507712 63921A 7BB026 94C843 ABDB5E C7EA8F E2F7C2 F2FDE0
+""".split()
+
+
+def to_rgb(h):
+    h = h.lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+PALETTE_HEX_SET = set(h.upper() for h in PALETTE_HEX)
+PALETTE_RGB_SET = set(to_rgb(h) for h in PALETTE_HEX)
+
+
+def check(path):
+    src = open(path, encoding="utf-8").read()
+    bad = set()
+    for m in set(re.findall(r"#[0-9a-fA-F]{3,8}\b", src)):
+        h = m.lstrip("#")
+        if len(h) in (3, 6):
+            norm = ("".join(c * 2 for c in h) if len(h) == 3 else h).upper()
+            if norm not in PALETTE_HEX_SET:
+                bad.add(m)
+        else:
+            bad.add(m)  # 4-/8-digit hex (alpha baked in) — review manually
+    for m in set(re.findall(r"rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)", src)):
+        if tuple(int(x) for x in m) not in PALETTE_RGB_SET:
+            bad.add("rgb(%s,%s,%s)" % m)
+    return sorted(bad)
+
+
+def main(paths):
+    failed = False
+    for p in paths:
+        bad = check(p)
+        if bad:
+            failed = True
+            print("✗ off-palette colours in %s:" % p)
+            for b in bad:
+                print("    ", b)
+        else:
+            print("✓ all colours in %s are within Palette 6" % p)
+    if failed:
+        print("\nAllowed colours are the 50 listed in this script (Refactoring UI Palette 6).")
+        print("Alpha may vary freely; only the RGB base must be in-palette.")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:] or ["index.html"]))
