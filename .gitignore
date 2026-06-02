@@ -1,0 +1,5 @@
+.playwright-mcp/
+docs-private/
+*.png
+# keep the social-share image (a real asset, not a scratch screenshot)
+!og-preview.png

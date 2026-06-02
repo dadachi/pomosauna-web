@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>PomoSauna — Monk's Pomodoro Sauna</title>
+<meta name="description" content="PomoSauna is a calm Pomodoro focus timer: a monk meditates through 25 minutes of sauna heat, then cools beneath a waterfall. Synthesized ambient sound, no sign-up." />
+<meta name="theme-color" content="#8D2B0B" />
+<!-- Open Graph / social -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="PomoSauna — focus, then totonou" />
+<meta property="og:description" content="A calm Pomodoro focus timer. Work through the sauna heat alongside a meditating monk, then rest beneath the waterfall." />
+<meta property="og:image" content="og-preview.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<style>
+  :root {
+    /* Refactoring UI — Palette 6 (see docs/palette-6.md) */
+    --sauna-1: #8D2B0B; /* Yellow 1 */
+    --sauna-2: #B44D12; /* Yellow 2 */
+    --water-1: #044E54; /* Cyan 1 */
+    --water-2: #14919B; /* Cyan 4 */
+    --ink: #FAF9F7;     /* Warm Grey 10 */
+    --ring-sauna: #F7C948; /* Yellow 6 */
+    --ring-water: #54D1DB; /* Cyan 7 */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    background: #27241D;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .hud {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    color: var(--ink);
+    text-shadow: 0 2px 12px rgba(39,36,29,0.7);
+    pointer-events: none;
+    --ring: var(--ring-sauna); /* progress-ring colour, set per phase */
+  }
+  .hud-inner { position: relative; }
+  /* circular countdown ring encircling the timer */
+  .ring {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: clamp(240px, 58vw, 400px);
+    height: clamp(240px, 58vw, 400px);
+    transform: translate(-50%, -50%) rotate(-90deg); /* start at 12 o'clock */
+    overflow: visible;
+    pointer-events: none;
+  }
+  .ring-track { fill: none; stroke: rgba(250,249,247,0.13); stroke-width: 2.5; }
+  .ring-progress {
+    fill: none; stroke: var(--ring); stroke-width: 3; stroke-linecap: round;
+    filter: drop-shadow(0 0 5px rgba(39,36,29,0.4));
+    transition: stroke 0.6s ease;
+  }
+  .ring-knob { fill: var(--ring); transition: fill 0.6s ease; }
+  /* transparent circular hit-area over the ring — tap to pause/resume */
+  .ring-tap {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: clamp(240px, 58vw, 400px);
+    height: clamp(240px, 58vw, 400px);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent; border: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    padding: 0; cursor: pointer; pointer-events: auto;
+    transition: background 0.2s ease;
+  }
+  .ring-tap:hover { background: radial-gradient(circle, rgba(250,249,247,0.06), transparent 70%); }
+  .ring-tap:active { transform: translate(-50%, -50%) scale(0.985); }
+  .ring-tap:focus-visible { outline: 2px solid rgba(250,249,247,0.4); outline-offset: 2px; }
+  .phase-label {
+    font-size: clamp(18px, 4vw, 30px);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+  .phase-sub {
+    font-size: clamp(12px, 2.4vw, 16px);
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    margin-bottom: 18px;
+    font-style: italic;
+  }
+  .timer {
+    font-size: clamp(58px, 15vw, 128px);
+    font-weight: 200;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .cycles {
+    margin-top: 14px;
+    font-size: clamp(12px, 2.4vw, 16px);
+    letter-spacing: 0.25em;
+    opacity: 0.7;
+  }
+  .controls {
+    position: absolute;
+    bottom: max(28px, env(safe-area-inset-bottom));
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 16px;
+  }
+  button {
+    pointer-events: auto;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: rgba(39,36,29,0.28);
+    border: 1px solid rgba(250,249,247,0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 13px 26px;
+    border-radius: 999px;
+    transition: transform .12s ease, background .2s ease, border-color .2s ease;
+  }
+  button:hover { background: rgba(250,249,247,0.16); border-color: rgba(250,249,247,0.8); }
+  button:active { transform: scale(0.94); }
+  button.primary { background: rgba(250,249,247,0.92); color: #27241D; font-weight: 600; border-color: transparent; }
+  button.primary:hover { background: #FAF9F7; }
+  button.off { opacity: 0.4; text-decoration: line-through; }
+  #start-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    background: rgba(39,36,29,0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    color: var(--ink);
+    text-align: center;
+    padding: 24px;
+  }
+  #start-overlay h1 {
+    font-size: clamp(34px, 9vw, 72px);
+    font-weight: 200;
+    letter-spacing: 0.12em;
+  }
+  #start-overlay p { max-width: 460px; opacity: 0.8; line-height: 1.6; font-size: clamp(14px,3vw,17px); }
+  .hidden { display: none !important; }
+
+  /* ---- Sound mixer ---- */
+  #mixer {
+    position: absolute; inset: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(39,36,29,0.5);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    padding: 24px;
+  }
+  .mixer-card {
+    background: rgba(39,36,29,0.86);
+    border: 1px solid rgba(250,249,247,0.25);
+    border-radius: 18px;
+    padding: 26px 28px;
+    width: min(440px, 92vw);
+    color: var(--ink);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .mixer-card h2 {
+    font-weight: 200; letter-spacing: 0.2em; text-transform: uppercase;
+    font-size: 20px; text-align: center;
+  }
+  .mix-phase { display: flex; flex-direction: column; gap: 16px; }
+  .mix-phase + .mix-phase { padding-top: 16px; border-top: 1px solid rgba(250,249,247,0.14); }
+  .mix-phase-title { font-weight: 300; letter-spacing: 0.18em; text-transform: uppercase; font-size: 13px; opacity: 0.7; }
+  .mix-channel { display: flex; flex-direction: column; gap: 8px; }
+  .mix-row { display: grid; grid-template-columns: 132px 1fr; align-items: center; gap: 14px; }
+  .mix-mute { font-size: 12px; letter-spacing: 0.1em; padding: 9px 14px; text-align: left; }
+  .mix-vol { width: 100%; accent-color: var(--ink); cursor: pointer; }
+  .mix-vol:disabled { opacity: 0.3; cursor: default; }
+  .mix-pick {
+    width: 100%; font-family: inherit; font-size: 12px; letter-spacing: 0.06em;
+    color: var(--ink); background: rgba(39,36,29,0.3);
+    border: 1px solid rgba(250,249,247,0.3); border-radius: 8px;
+    padding: 7px 10px; cursor: pointer;
+  }
+  .mix-pick option { color: #27241D; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div class="hud">
+    <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+      <circle class="ring-track" cx="120" cy="120" r="112"></circle>
+      <circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="112"></circle>
+      <circle class="ring-knob" id="ringKnob" cx="232" cy="120" r="6"></circle>
+    </svg>
+    <div class="hud-inner">
+      <div class="phase-label" id="phaseLabel">Sauna</div>
+      <div class="phase-sub" id="phaseSub">The monk meditates in the heat</div>
+      <div class="timer" id="timer">25:00</div>
+      <div class="cycles" id="cycles">Cycle 1</div>
+    </div>
+    <button class="ring-tap" id="ringTap" aria-label="Pause" title="Tap to pause / resume"></button>
+  </div>
+
+  <div class="controls">
+    <button id="pauseBtn" class="primary">Pause</button>
+    <button id="skipBtn">Skip phase</button>
+    <button id="resetBtn">Reset</button>
+    <button id="soundBtn">Sound</button>
+  </div>
+
+  <div id="start-overlay">
+    <h1>PomoSauna</h1>
+    <p>A monk cycles between the sauna and the waterfall.<br>
+       25 minutes of focused heat, then 5 minutes of cool refreshment.<br>
+       Work alongside him.</p>
+    <button id="beginBtn" class="primary">Enter the sauna</button>
+  </div>
+
+  <div id="mixer" class="hidden">
+    <div class="mixer-card">
+      <h2>Sound</h2>
+      <div id="mixerBody"></div>
+      <button id="mixerClose" class="primary">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+(function () {
+  // ---------- Config ----------
+  const params = new URLSearchParams(location.search);
+  const FAST = params.has("fast"); // ?fast => 25s / 5s for testing
+  const SAUNA_SECONDS = FAST ? 25 : 25 * 60;
+  const WATER_SECONDS = FAST ? 5 : 5 * 60;
+
+  const PHASE = { SAUNA: "sauna", WATER: "water" };
+
+  // ---------- Persisted sound mixer ----------
+  // Per phase, per channel (cue / ambient): independent mute + volume.
+  // Keys "sauna"/"water" deliberately match PHASE.SAUNA/PHASE.WATER.
+  const PREFS_KEY = "pomosauna.prefs";
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+  function defaultSound() {
+    return {
+      sauna: { cue: { mute: false, vol: 1, id: "loyly" }, ambient: { mute: false, vol: 1, id: "fire" } },
+      water: { cue: { mute: false, vol: 1, id: "bell" }, ambient: { mute: false, vol: 1, id: "waterfall" } },
+    };
+  }
+  function loadSound() {
+    const snd = defaultSound();
+    let raw = {};
+    try { raw = JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }
+    catch { return snd; } // storage unavailable (private mode, etc.)
+    if (raw.sound) {
+      for (const ph of ["sauna", "water"]) {
+        for (const k of ["cue", "ambient"]) {
+          const s = raw.sound[ph] && raw.sound[ph][k];
+          if (!s) continue;
+          if (typeof s.mute === "boolean") snd[ph][k].mute = s.mute;
+          if (typeof s.vol === "number") snd[ph][k].vol = clamp01(s.vol);
+          if (typeof s.id === "string") snd[ph][k].id = s.id; // validated at play time
+        }
+      }
+    } else {
+      // migrate the old flat {muteCues, muteAmbient} prefs
+      if (raw.muteCues === true) { snd.sauna.cue.mute = snd.water.cue.mute = true; }
+      if (raw.muteAmbient === true) { snd.sauna.ambient.mute = snd.water.ambient.mute = true; }
+    }
+    return snd;
+  }
+  function saveSound() {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify({ sound })); }
+    catch { /* storage unavailable — ignore */ }
+  }
+  const sound = loadSound();
+
+  // ---------- State ----------
+  const state = {
+    phase: PHASE.SAUNA,
+    remaining: SAUNA_SECONDS,
+    running: false,
+    cycle: 1,
+    lastTick: 0,
+    transitionAt: 0, // performance.now of last phase change (for animation)
+  };
+
+  // ---------- DOM ----------
+  const canvas = document.getElementById("scene");
+  const ctx = canvas.getContext("2d");
+  const hud = document.querySelector(".hud");
+  const phaseLabel = document.getElementById("phaseLabel");
+  const phaseSub = document.getElementById("phaseSub");
+  const timerEl = document.getElementById("timer");
+  const cyclesEl = document.getElementById("cycles");
+  const ringProgress = document.getElementById("ringProgress");
+  const ringKnob = document.getElementById("ringKnob");
+  const ringTap = document.getElementById("ringTap");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const skipBtn = document.getElementById("skipBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const soundBtn = document.getElementById("soundBtn");
+  const beginBtn = document.getElementById("beginBtn");
+  const startOverlay = document.getElementById("start-overlay");
+  const mixer = document.getElementById("mixer");
+  const mixerBody = document.getElementById("mixerBody");
+  const mixerClose = document.getElementById("mixerClose");
+
+  // ---------- Audio (Web Audio API, fully synthesized) ----------
+  const audio = {
+    ctx: null,
+    ambient: { sauna: null, water: null }, // live looping handle per phase
+  };
+
+  function ensureAudio() {
+    if (!audio.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audio.ctx = new AC();
+    }
+    if (audio.ctx.state === "suspended") audio.ctx.resume();
+    return audio.ctx;
+  }
+
+  function makeNoiseBuffer(ac, seconds) {
+    const len = Math.floor(ac.sampleRate * seconds);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      // brown-ish noise: smoother than white, good for water/fire
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.2;
+    }
+    return buf;
+  }
+
+  // Bright white-noise buffer for the steam hiss (the brown buffer is too dull).
+  function makeBrightNoiseBuffer(ac, seconds) {
+    const len = Math.floor(ac.sampleRate * seconds);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
+  // A looping-ambience handle: ramps a master gain to base*v, exposes a live
+  // setVol and a fade-out stop. `sources` are the nodes to stop on cleanup.
+  function ambientHandle(ac, g, base, sources) {
+    return {
+      setVol(v) {
+        const t = ac.currentTime;
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(Math.max(0.0001, base * v), t + 0.15);
+      },
+      stop() {
+        const t = ac.currentTime;
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0.0001, t + 0.7);
+        for (const s of sources) { try { s.stop(t + 0.8); } catch (e) {} }
+      }
+    };
+  }
+  // a looping noise buffer source through `filters` (chained), into a ramped gain
+  function loopNoise(ac, buf, base, v, filters, extraSources) {
+    const src = ac.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    g.gain.linearRampToValueAtTime(base * v, ac.currentTime + 1.4);
+    let node = src;
+    for (const f of filters) { node.connect(f); node = f; }
+    node.connect(g).connect(ac.destination);
+    src.start();
+    return ambientHandle(ac, g, base, [src, ...(extraSources || [])]);
+  }
+
+  // ---- Cue sounds (one-shot). play(ac, now, v) ----
+  const CUE_SOUNDS = [
+    { id: "loyly", label: "Löyly hiss", play(ac, now, v) {
+      // water on hot stones: sharp sizzle swelling into a steam hiss
+      const src = ac.createBufferSource();
+      src.buffer = makeBrightNoiseBuffer(ac, 2.2);
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass";
+      hp.frequency.setValueAtTime(900, now);
+      hp.frequency.exponentialRampToValueAtTime(3600, now + 0.18);
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(5200, now);
+      bp.frequency.exponentialRampToValueAtTime(1700, now + 1.6);
+      bp.Q.value = 0.7;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.32 * v, now + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.14 * v, now + 0.45);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 1.9);
+      src.connect(hp).connect(bp).connect(g).connect(ac.destination);
+      src.start(now); src.stop(now + 2.0);
+    } },
+    { id: "bell", label: "Bell", play(ac, now, v) {
+      [528, 792, 1056].forEach((f, i) => {
+        const o = ac.createOscillator();
+        o.type = "sine"; o.frequency.value = f;
+        const g = ac.createGain();
+        const amp = (0.18 / (i + 1)) * v;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(amp, now + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+        o.connect(g).connect(ac.destination);
+        o.start(now); o.stop(now + 2.3);
+      });
+    } },
+    { id: "bowl", label: "Singing bowl", play(ac, now, v) {
+      // inharmonic partials with a long, slow decay
+      [[440, 1], [440 * 2.7, 0.5], [440 * 5.4, 0.22]].forEach(([f, a]) => {
+        const o = ac.createOscillator();
+        o.type = "sine"; o.frequency.value = f;
+        const g = ac.createGain();
+        const amp = 0.16 * a * v;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(amp, now + 0.08);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 3.6);
+        o.connect(g).connect(ac.destination);
+        o.start(now); o.stop(now + 3.7);
+      });
+    } },
+    { id: "block", label: "Wood block", play(ac, now, v) {
+      // mokugyo knock: quick pitch-dropped pop + a noise click
+      const o = ac.createOscillator();
+      o.type = "sine";
+      o.frequency.setValueAtTime(440, now);
+      o.frequency.exponentialRampToValueAtTime(170, now + 0.06);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.32 * v, now + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      o.connect(g).connect(ac.destination);
+      o.start(now); o.stop(now + 0.2);
+      const src = ac.createBufferSource();
+      src.buffer = makeBrightNoiseBuffer(ac, 0.06);
+      const cbp = ac.createBiquadFilter();
+      cbp.type = "bandpass"; cbp.frequency.value = 2000; cbp.Q.value = 1;
+      const cg = ac.createGain();
+      cg.gain.setValueAtTime(0.2 * v, now);
+      cg.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+      src.connect(cbp).connect(cg).connect(ac.destination);
+      src.start(now); src.stop(now + 0.06);
+    } },
+    { id: "chime", label: "Chime", play(ac, now, v) {
+      [880, 1320, 1760].forEach((f, i) => {
+        const t = now + i * 0.08;
+        const o = ac.createOscillator();
+        o.type = "sine"; o.frequency.value = f;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.12 * v, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+        o.connect(g).connect(ac.destination);
+        o.start(t); o.stop(t + 1.2);
+      });
+    } },
+  ];
+
+  // ---- Ambient sounds (loop). make(ac, v) -> { setVol, stop } ----
+  const AMBIENT_SOUNDS = [
+    { id: "fire", label: "Fire", make(ac, v) {
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = 1100; bp.Q.value = 0.5;
+      return loopNoise(ac, makeNoiseBuffer(ac, 4), 0.06, v, [bp]);
+    } },
+    { id: "waterfall", label: "Waterfall", make(ac, v) {
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass"; hp.frequency.value = 220;
+      const lp = ac.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 1400; lp.Q.value = 0.6;
+      const lfo = ac.createOscillator(); lfo.frequency.value = 0.3;
+      const lg = ac.createGain(); lg.gain.value = 400;
+      lfo.connect(lg).connect(lp.frequency); lfo.start();
+      return loopNoise(ac, makeNoiseBuffer(ac, 3), 0.5, v, [hp, lp], [lfo]);
+    } },
+    { id: "wind", label: "Wind", make(ac, v) {
+      const lp = ac.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 500; lp.Q.value = 0.4;
+      const lfo = ac.createOscillator(); lfo.frequency.value = 0.12;
+      const lg = ac.createGain(); lg.gain.value = 260;
+      lfo.connect(lg).connect(lp.frequency); lfo.start(); // slow gusts
+      return loopNoise(ac, makeNoiseBuffer(ac, 4), 0.28, v, [lp], [lfo]);
+    } },
+    { id: "rain", label: "Rain", make(ac, v) {
+      const hp = ac.createBiquadFilter();
+      hp.type = "highpass"; hp.frequency.value = 1200;
+      const lp = ac.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 7000;
+      return loopNoise(ac, makeBrightNoiseBuffer(ac, 3), 0.12, v, [hp, lp]);
+    } },
+    { id: "om", label: "Om drone", make(ac, v) {
+      const base = 0.12;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, ac.currentTime);
+      g.gain.linearRampToValueAtTime(base * v, ac.currentTime + 1.8);
+      g.connect(ac.destination);
+      const sources = [];
+      [110, 165, 220].forEach((f, i) => {
+        const o = ac.createOscillator(); o.type = "sine"; o.frequency.value = f;
+        const og = ac.createGain(); og.gain.value = 1 / (i + 1.5);
+        const det = ac.createOscillator(); det.frequency.value = 0.1 + i * 0.03;
+        const dg = ac.createGain(); dg.gain.value = 2;
+        det.connect(dg).connect(o.detune); // gentle shimmer
+        o.connect(og).connect(g);
+        o.start(); det.start(); sources.push(o, det);
+      });
+      return ambientHandle(ac, g, base, sources);
+    } },
+  ];
+
+  const cueById = (id) => CUE_SOUNDS.find((s) => s.id === id) || CUE_SOUNDS[0];
+  const ambientById = (id) => AMBIENT_SOUNDS.find((s) => s.id === id) || AMBIENT_SOUNDS[0];
+
+  // ---- Dispatch: play the sound chosen for a phase's channel ----
+  function playCue(phaseKey) {
+    const ch = sound[phaseKey].cue;
+    if (ch.mute || ch.vol <= 0) return;
+    const ac = ensureAudio();
+    cueById(ch.id).play(ac, ac.currentTime, ch.vol);
+  }
+  function startAmbient(phaseKey) {
+    if (audio.ambient[phaseKey]) return;
+    const ch = sound[phaseKey].ambient;
+    if (ch.mute || ch.vol <= 0) return;
+    const ac = ensureAudio();
+    audio.ambient[phaseKey] = ambientById(ch.id).make(ac, ch.vol);
+  }
+  function stopAmbient(phaseKey) {
+    const h = audio.ambient[phaseKey];
+    if (h) { h.stop(); audio.ambient[phaseKey] = null; }
+  }
+
+  // ---------- Phase logic ----------
+  function enterPhase(phase, { silent = false } = {}) {
+    state.phase = phase;
+    state.transitionAt = performance.now();
+    if (phase === PHASE.SAUNA) {
+      state.remaining = SAUNA_SECONDS;
+      phaseLabel.textContent = "Sauna";
+      phaseSub.textContent = "The monk meditates in the heat";
+      stopAmbient(PHASE.WATER);
+      if (!silent) playCue(PHASE.SAUNA);
+      startAmbient(PHASE.SAUNA);
+    } else {
+      state.remaining = WATER_SECONDS;
+      phaseLabel.textContent = "Waterfall";
+      phaseSub.textContent = "The monk cools beneath the falls — refreshed";
+      stopAmbient(PHASE.SAUNA);
+      if (!silent) playCue(PHASE.WATER);
+      startAmbient(PHASE.WATER);
+    }
+    updateHud();
+  }
+
+  function advancePhase() {
+    if (state.phase === PHASE.SAUNA) {
+      enterPhase(PHASE.WATER);
+    } else {
+      state.cycle += 1;
+      enterPhase(PHASE.SAUNA); // löyly hiss as he steps back into the heat
+    }
+  }
+
+  // circular countdown ring: a depleting arc + a knob at its leading edge
+  const RING_R = 112, RING_C = 2 * Math.PI * RING_R;
+  ringProgress.style.strokeDasharray = String(RING_C);
+  function updateRing() {
+    const total = state.phase === PHASE.SAUNA ? SAUNA_SECONDS : WATER_SECONDS;
+    const f = Math.max(0, Math.min(1, state.remaining / total)); // fraction left
+    ringProgress.style.strokeDashoffset = String(RING_C * (1 - f));
+    const ang = f * 2 * Math.PI; // 0 maps to 12 o'clock (SVG is rotated -90°)
+    ringKnob.setAttribute("cx", String(120 + RING_R * Math.cos(ang)));
+    ringKnob.setAttribute("cy", String(120 + RING_R * Math.sin(ang)));
+  }
+
+  function updateHud() {
+    const m = Math.floor(state.remaining / 60);
+    const s = Math.floor(state.remaining % 60);
+    timerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    cyclesEl.textContent = `Cycle ${state.cycle}`;
+    pauseBtn.textContent = state.running ? "Pause" : "Resume";
+    ringTap.setAttribute("aria-label", state.running ? "Pause" : "Resume");
+    hud.style.setProperty("--ring", state.phase === PHASE.SAUNA ? "var(--ring-sauna)" : "var(--ring-water)");
+    updateRing();
+    document.title = `${timerEl.textContent} · ${state.phase === PHASE.SAUNA ? "Sauna" : "Waterfall"} — PomoSauna`;
+  }
+
+  // ---------- Main loop ----------
+  function tick(now) {
+    if (state.running) {
+      if (!state.lastTick) state.lastTick = now;
+      const dt = (now - state.lastTick) / 1000;
+      state.lastTick = now;
+      state.remaining -= dt;
+      if (state.remaining <= 0) {
+        advancePhase();
+      }
+      updateHud();
+    } else {
+      state.lastTick = now;
+    }
+    render(now);
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- Rendering ----------
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+
+  // the sauna stones sit here (normalized) — steam billows up from them
+  const STONES_X = 0.16, STONES_Y = 0.79;
+
+  // particle pools
+  const steam = Array.from({ length: 90 }, () => spawnSteam(true));
+  const drops = Array.from({ length: 120 }, () => spawnDrop(true));
+
+  function spawnSteam(init) {
+    return {
+      // jet up from the stones with a tight base that spreads as it climbs
+      x: STONES_X + (Math.random() - 0.5) * 0.05,
+      y: init ? STONES_Y - Math.random() * 0.7 : STONES_Y + 0.01,
+      r: 5 + Math.random() * 10,
+      grow: 0.5 + Math.random() * 0.7,        // billows wider as it rises
+      spd: 0.07 + Math.random() * 0.1,         // fast, vigorous rise
+      drift: (Math.random() - 0.5) * 0.04,
+      turb: 0.0014 + Math.random() * 0.002,    // swirling turbulence
+      a: 0.07 + Math.random() * 0.12,
+      seed: Math.random() * Math.PI * 2,
+    };
+  }
+  function spawnDrop(init) {
+    return {
+      x: 0.5 + (Math.random() - 0.5) * 0.18,
+      y: init ? Math.random() : -0.05,
+      len: 12 + Math.random() * 26,
+      spd: 0.9 + Math.random() * 0.9,
+      w: 1 + Math.random() * 2,
+    };
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function render(now) {
+    const t = now / 1000;
+    const isSauna = state.phase === PHASE.SAUNA;
+    const since = (now - state.transitionAt) / 1000;
+    const fade = Math.min(1, since / 1.2); // ease in scene
+
+    // Background gradient
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    if (isSauna) {
+      g.addColorStop(0, "#B44D12");
+      g.addColorStop(0.5, "#8D2B0B");
+      g.addColorStop(1, "#27241D");
+    } else {
+      g.addColorStop(0, "#0A6C74");
+      g.addColorStop(0.55, "#044E54");
+      g.addColorStop(1, "#27241D");
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = W / 2;
+    const groundY = H * 0.82;
+
+    if (isSauna) {
+      drawSaunaScene(t, cx, groundY, fade);
+    } else {
+      drawWaterScene(t, cx, groundY, fade);
+    }
+  }
+
+  // ---- Sauna scene ----
+  function drawSaunaScene(t, cx, groundY, fade) {
+    // wooden plank walls
+    ctx.save();
+    const plankH = Math.max(26, H / 16);
+    for (let y = 0; y < groundY; y += plankH) {
+      const shade = 0.5 + 0.5 * Math.sin((y / plankH) * 1.7);
+      ctx.fillStyle = `rgba(180,77,18,${0.12 + shade * 0.16})`; // Yellow 2, plank grain
+      ctx.fillRect(0, y, W, 2);
+    }
+    ctx.restore();
+
+    // bench
+    ctx.fillStyle = "#CB6E17";
+    ctx.fillRect(cx - W * 0.30, groundY, W * 0.60, H * 0.05);
+    ctx.fillStyle = "#8D2B0B";
+    ctx.fillRect(cx - W * 0.30, groundY + H * 0.05, W * 0.60, H * 0.02);
+
+    // glowing stove / coals on the left
+    const stoveX = cx - W * 0.34, stoveY = groundY - H * 0.02;
+    const glow = 0.6 + 0.4 * Math.sin(t * 6 + Math.sin(t * 2.3));
+    const rg = ctx.createRadialGradient(stoveX, stoveY, 2, stoveX, stoveY, 80);
+    rg.addColorStop(0, `rgba(240,180,41,${0.5 * glow})`);
+    rg.addColorStop(1, "rgba(240,180,41,0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(stoveX - 90, stoveY - 90, 180, 120);
+    ctx.fillStyle = "#27241D";
+    ctx.fillRect(stoveX - 26, stoveY - 6, 52, 40);
+    ctx.fillStyle = `rgba(247,201,72,${0.55 + glow * 0.35})`; // Yellow 6, glowing coals
+    ctx.fillRect(stoveX - 20, stoveY - 2, 40, 10);
+
+    // monk sitting on bench, gentle breathing bob
+    const bob = Math.sin(t * 1.3) * 4;
+    drawMonk(cx + W * 0.08, groundY - H * 0.005 + bob, Math.min(H, W) * 0.16, {
+      robe: "#CB6E17", robe2: "#8D2B0B", sitting: true,
+    });
+
+    // steam billowing vigorously up from the stones
+    ctx.save();
+    ctx.globalAlpha = fade;
+    for (const p of steam) {
+      p.y -= p.spd * 0.012;
+      // turbulent swirl that widens with height above the stones
+      const climb = Math.max(0, STONES_Y - p.y);
+      p.x += p.drift * 0.01 * (1 + climb * 2) + Math.sin(t * 2.4 + p.seed) * p.turb;
+      p.r += p.grow;
+      p.a *= 0.99;                       // thins out as it disperses
+      if (p.y < 0.02 || p.a < 0.012) Object.assign(p, spawnSteam(false));
+      const px = p.x * W, py = p.y * H;
+      const sg = ctx.createRadialGradient(px, py, 0, px, py, p.r);
+      sg.addColorStop(0, `rgba(255,251,234,${p.a})`);
+      sg.addColorStop(1, "rgba(255,251,234,0)");
+      ctx.fillStyle = sg;
+      ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+
+    // warm vignette
+    vignette("rgba(39,36,29,0.55)");
+  }
+
+  // ---- Waterfall scene ----
+  function drawWaterScene(t, cx, groundY, fade) {
+    // back rock
+    ctx.fillStyle = "#044E54";
+    ctx.fillRect(0, 0, W, groundY);
+
+    // the falls — a translucent sheet down the middle
+    const fallW = Math.max(60, W * 0.16);
+    const fg = ctx.createLinearGradient(cx, 0, cx, groundY);
+    fg.addColorStop(0, "rgba(190,248,253,0.55)");
+    fg.addColorStop(1, "rgba(135,234,242,0.25)");
+    ctx.fillStyle = fg;
+    ctx.fillRect(cx - fallW / 2, 0, fallW, groundY);
+
+    // streak lines in the falls
+    ctx.strokeStyle = "rgba(224,252,255,0.25)";
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 14; i++) {
+      const x = cx - fallW / 2 + (i / 13) * fallW;
+      const off = (t * 600 + i * 90) % groundY;
+      ctx.beginPath();
+      ctx.moveTo(x, off);
+      ctx.lineTo(x, off + 40);
+      ctx.stroke();
+    }
+
+    // monk meditating beneath the falls, refreshed
+    const sway = Math.sin(t * 1.1) * 3;
+    drawMonk(cx + sway, groundY - H * 0.005, Math.min(H, W) * 0.16, {
+      robe: "#14919B", robe2: "#0A6C74", sitting: true,
+    });
+
+    // splash pool
+    ctx.fillStyle = "rgba(84,209,219,0.5)";
+    ctx.fillRect(0, groundY + H * 0.02, W, H);
+    // ripples
+    ctx.strokeStyle = "rgba(224,252,255,0.25)";
+    for (let i = 0; i < 5; i++) {
+      const rr = ((t * 60 + i * 40) % 160);
+      ctx.globalAlpha = 1 - rr / 160;
+      ctx.beginPath();
+      ctx.ellipse(cx, groundY + H * 0.05, rr, rr * 0.28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // falling droplets / spray
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = "rgba(224,252,255,0.7)";
+    for (const d of drops) {
+      d.y += d.spd * 0.02;
+      if (d.y > 0.86) Object.assign(d, spawnDrop(false));
+      const dx = d.x * W, dy = d.y * H;
+      ctx.lineWidth = d.w;
+      ctx.beginPath();
+      ctx.moveTo(dx, dy);
+      ctx.lineTo(dx, dy + d.len);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    vignette("rgba(4,78,84,0.5)");
+  }
+
+  // ---- A simple monk ----
+  function drawMonk(x, baseY, s, opt) {
+    ctx.save();
+    ctx.translate(x, baseY);
+
+    const headR = s * 0.26;
+    const bodyTop = -s * 0.95;
+    const shoulderY = bodyTop + headR * 1.15;
+
+    // seated cross-legged meditation silhouette
+    const baseHalf = s * 0.48;     // half-width of the folded-leg base
+    const shoulderHalf = s * 0.22; // half-width at the shoulders
+    const lapY = -s * 0.12;        // top of the lap (where the hands rest)
+    const seatY = -s * 0.02;       // contact with the bench
+    const r = s * 0.12;            // rounding of the lap's top corners
+
+    // crossed legs — a wide, low, round-topped mound
+    ctx.fillStyle = opt.robe;
+    ctx.beginPath();
+    ctx.moveTo(-baseHalf, seatY);
+    ctx.lineTo(-baseHalf, lapY + r);
+    ctx.quadraticCurveTo(-baseHalf, lapY, -baseHalf + r, lapY);
+    ctx.lineTo(baseHalf - r, lapY);
+    ctx.quadraticCurveTo(baseHalf, lapY, baseHalf, lapY + r);
+    ctx.lineTo(baseHalf, seatY);
+    ctx.closePath();
+    ctx.fill();
+
+    // torso — rounded trapezoid rising from the lap to the shoulders
+    ctx.beginPath();
+    ctx.moveTo(-shoulderHalf, shoulderY);
+    ctx.quadraticCurveTo(0, shoulderY - headR * 0.5, shoulderHalf, shoulderY); // rounded shoulders
+    ctx.quadraticCurveTo(baseHalf * 0.74, (shoulderY + lapY) / 2, baseHalf * 0.66, lapY + s * 0.02);
+    ctx.lineTo(-baseHalf * 0.66, lapY + s * 0.02);
+    ctx.quadraticCurveTo(-baseHalf * 0.74, (shoulderY + lapY) / 2, -shoulderHalf, shoulderY);
+    ctx.closePath();
+    ctx.fill();
+
+    // robe fold — a soft central shadow for depth
+    ctx.fillStyle = opt.robe2;
+    ctx.beginPath();
+    ctx.moveTo(0, shoulderY + headR * 0.1);
+    ctx.quadraticCurveTo(shoulderHalf * 0.6, (shoulderY + lapY) / 2, 0, lapY);
+    ctx.quadraticCurveTo(-shoulderHalf * 0.6, (shoulderY + lapY) / 2, 0, shoulderY + headR * 0.1);
+    ctx.closePath();
+    ctx.fill();
+
+    // knees — two low bumps at the front of the crossed legs
+    ctx.fillStyle = opt.robe;
+    for (const sgn of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(sgn * baseHalf * 0.6, lapY + s * 0.05, s * 0.13, s * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // arms — draped from the shoulders along the thighs into the lap
+    ctx.strokeStyle = opt.robe;
+    ctx.lineWidth = s * 0.15;
+    ctx.lineCap = "round";
+    for (const sgn of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(sgn * shoulderHalf * 0.8, shoulderY + headR * 0.25);
+      ctx.quadraticCurveTo(sgn * baseHalf * 0.82, lapY - s * 0.02, sgn * s * 0.05, lapY + s * 0.03);
+      ctx.stroke();
+    }
+
+    // hands resting together in the lap (dhyana mudra)
+    ctx.fillStyle = "#FFF3C4";
+    ctx.beginPath();
+    ctx.ellipse(0, lapY + s * 0.04, s * 0.15, s * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // head
+    const headY = bodyTop;
+    ctx.fillStyle = "#FFF3C4";
+    ctx.beginPath();
+    ctx.arc(0, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // serene meditating face — eyes gently closed, mouth calm
+    ctx.strokeStyle = "rgba(39,36,29,0.78)";
+    ctx.lineWidth = Math.max(1.5, headR * 0.06);
+    ctx.lineCap = "round";
+    // closed, softly downcast eyelids
+    const eyeY = headY - headR * 0.04, eyeW = headR * 0.22, eyeDx = headR * 0.34;
+    for (const sx of [-1, 1]) {
+      const ex = sx * eyeDx;
+      ctx.beginPath();
+      ctx.moveTo(ex - eyeW, eyeY);
+      ctx.quadraticCurveTo(ex, eyeY + eyeW * 0.55, ex + eyeW, eyeY);
+      ctx.stroke();
+    }
+    // calm, barely-there mouth
+    ctx.strokeStyle = "rgba(39,36,29,0.55)";
+    ctx.beginPath();
+    ctx.moveTo(-headR * 0.16, headY + headR * 0.34);
+    ctx.quadraticCurveTo(0, headY + headR * 0.4, headR * 0.16, headY + headR * 0.34);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function vignette(color) {
+    const vg = ctx.createRadialGradient(W / 2, H * 0.5, Math.min(W, H) * 0.2, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, "rgba(39,36,29,0)");
+    vg.addColorStop(1, color);
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ---------- Controls ----------
+  function begin() {
+    ensureAudio();
+    startOverlay.classList.add("hidden");
+    state.running = true;
+    state.lastTick = 0;
+    // monk's first entrance: the löyly hiss + fire start
+    enterPhase(PHASE.SAUNA);
+  }
+
+  function togglePause() {
+    state.running = !state.running;
+    state.lastTick = 0;
+    if (state.running) {
+      ensureAudio();
+      startAmbient(state.phase);
+    } else {
+      stopAmbient(PHASE.SAUNA); stopAmbient(PHASE.WATER);
+    }
+    updateHud();
+  }
+
+  function skip() {
+    state.lastTick = 0;
+    advancePhase();
+  }
+
+  function reset() {
+    state.cycle = 1;
+    state.running = true;
+    state.lastTick = 0;
+    enterPhase(PHASE.SAUNA);
+  }
+
+  // ---------- Sound mixer ----------
+  // Cues are one-shots (settings just apply to the next play). Ambience loops,
+  // so a live change must start/stop/re-level the running loop for that phase.
+  function refreshAmbient(phaseKey) {
+    const ch = sound[phaseKey].ambient;
+    const live = state.running && state.phase === phaseKey;
+    if (ch.mute || ch.vol <= 0) {
+      stopAmbient(phaseKey);
+    } else if (live) {
+      const node = audio.ambient[phaseKey];
+      if (node) node.setVol(ch.vol);   // re-level the running loop
+      else startAmbient(phaseKey);
+    }
+  }
+
+  // A short, self-stopping preview so users can audition a chosen sound even
+  // when its phase isn't currently playing. Audible regardless of mute/zero-vol.
+  let previewHandle = null, previewTimer = null;
+  function stopPreview() {
+    if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
+    if (previewHandle) { previewHandle.stop(); previewHandle = null; }
+  }
+  function previewChannel(phaseKey, kind) {
+    const ch = sound[phaseKey][kind];
+    const ac = ensureAudio();
+    const vol = Math.max(0.5, ch.vol); // keep previews audible
+    if (kind === "cue") {
+      cueById(ch.id).play(ac, ac.currentTime, vol);
+      return;
+    }
+    // ambient: if it's the live loop, swap it in place; else preview briefly
+    if (state.running && state.phase === phaseKey && !ch.mute && ch.vol > 0) {
+      stopAmbient(phaseKey); startAmbient(phaseKey);
+      return;
+    }
+    stopPreview();
+    const h = ambientById(ch.id).make(ac, vol);
+    previewHandle = h;
+    previewTimer = setTimeout(() => {
+      if (previewHandle === h) { h.stop(); previewHandle = null; }
+      previewTimer = null;
+    }, 3000);
+  }
+
+  const MIXER_PHASES = [
+    { key: PHASE.SAUNA, name: "Sauna",
+      channels: [{ kind: "cue", label: "Cue" }, { kind: "ambient", label: "Ambience" }] },
+    { key: PHASE.WATER, name: "Waterfall",
+      channels: [{ kind: "cue", label: "Cue" }, { kind: "ambient", label: "Ambience" }] },
+  ];
+
+  function buildMixer() {
+    stopPreview();
+    mixerBody.innerHTML = "";
+    for (const ph of MIXER_PHASES) {
+      const sec = document.createElement("div");
+      sec.className = "mix-phase";
+      const title = document.createElement("div");
+      title.className = "mix-phase-title";
+      title.textContent = ph.name;
+      sec.appendChild(title);
+
+      for (const c of ph.channels) {
+        const cfg = sound[ph.key][c.kind];
+        const pool = c.kind === "cue" ? CUE_SOUNDS : AMBIENT_SOUNDS;
+        if (!pool.some((s) => s.id === cfg.id)) cfg.id = pool[0].id; // heal bad id
+
+        const wrap = document.createElement("div");
+        wrap.className = "mix-channel";
+
+        const row = document.createElement("div");
+        row.className = "mix-row";
+
+        const mute = document.createElement("button");
+        mute.className = "mix-mute";
+        mute.textContent = c.label;
+        mute.classList.toggle("off", cfg.mute);
+
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = "0"; slider.max = "100"; slider.step = "1";
+        slider.className = "mix-vol";
+        slider.value = String(Math.round(cfg.vol * 100));
+        slider.disabled = cfg.mute;
+        slider.setAttribute("aria-label", `${ph.name} ${c.label} volume`);
+
+        const pick = document.createElement("select");
+        pick.className = "mix-pick";
+        pick.setAttribute("aria-label", `${ph.name} ${c.label} sound`);
+        for (const sd of pool) {
+          const opt = document.createElement("option");
+          opt.value = sd.id; opt.textContent = sd.label;
+          pick.appendChild(opt);
+        }
+        pick.value = cfg.id;
+
+        mute.addEventListener("click", () => {
+          cfg.mute = !cfg.mute;
+          mute.classList.toggle("off", cfg.mute);
+          slider.disabled = cfg.mute;
+          if (c.kind === "ambient") refreshAmbient(ph.key);
+          saveSound();
+        });
+        slider.addEventListener("input", () => {
+          cfg.vol = clamp01(slider.value / 100);
+          if (c.kind === "ambient") refreshAmbient(ph.key);
+        });
+        slider.addEventListener("change", saveSound);
+        pick.addEventListener("change", () => {
+          cfg.id = pick.value;
+          saveSound();
+          previewChannel(ph.key, c.kind); // audition the new choice
+        });
+
+        row.appendChild(mute);
+        row.appendChild(slider);
+        wrap.appendChild(row);
+        wrap.appendChild(pick);
+        sec.appendChild(wrap);
+      }
+      mixerBody.appendChild(sec);
+    }
+  }
+
+  function openMixer() { buildMixer(); mixer.classList.remove("hidden"); }
+  function closeMixer() { stopPreview(); mixer.classList.add("hidden"); }
+  function toggleMixer() {
+    if (mixer.classList.contains("hidden")) openMixer();
+    else closeMixer();
+  }
+
+  beginBtn.addEventListener("click", begin);
+  pauseBtn.addEventListener("click", togglePause);
+  ringTap.addEventListener("click", togglePause); // tap the ring to pause/resume
+  skipBtn.addEventListener("click", skip);
+  resetBtn.addEventListener("click", reset);
+  soundBtn.addEventListener("click", toggleMixer);
+  mixerClose.addEventListener("click", closeMixer);
+  mixer.addEventListener("click", (e) => { if (e.target === mixer) closeMixer(); });
+
+  // Keyboard: space = pause/resume
+  window.addEventListener("keydown", (e) => {
+    if (startOverlay.classList.contains("hidden") === false) return;
+    if (e.code === "Escape" && !mixer.classList.contains("hidden")) { closeMixer(); return; }
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return; // don't hijack controls
+    if (e.code === "Space") { e.preventDefault(); togglePause(); }
+    if (e.code === "KeyS") skip();
+    if (e.code === "KeyV") toggleMixer(); // sound mixer
+  });
+
+  // keep waterfall/fire alive on tab refocus
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && state.running && audio.ctx && audio.ctx.state === "suspended") {
+      audio.ctx.resume();
+    }
+  });
+
+  // ---------- Boot ----------
+  resize();
+  updateHud();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
