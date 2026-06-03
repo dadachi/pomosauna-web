@@ -665,6 +665,23 @@
   // the sauna stones sit here (normalized) — steam billows up from them
   const STONES_X = 0.16, STONES_Y = 0.79;
 
+  // Pre-baked soft puff sprite. Building a radial gradient per particle per
+  // frame is the steam loop's hotspot (~90 gradients × 60fps); instead bake the
+  // falloff once and drawImage it scaled. Colour matches the per-particle fill
+  // below (same warm white); per-particle alpha is applied via globalAlpha.
+  const PUFF = (() => {
+    const size = 128, half = size / 2;
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    const grad = g.createRadialGradient(half, half, 0, half, half, half);
+    grad.addColorStop(0, "rgba(255,251,234,1)");
+    grad.addColorStop(1, "rgba(255,251,234,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+    return c;
+  })();
+
   // particle pools
   const steam = Array.from({ length: 90 }, () => spawnSteam(true));
   const drops = Array.from({ length: 120 }, () => spawnDrop(true));
@@ -764,7 +781,6 @@
 
     // steam billowing vigorously up from the stones
     ctx.save();
-    ctx.globalAlpha = fade;
     for (const p of steam) {
       p.y -= p.spd * 0.012;
       // turbulent swirl that widens with height above the stones
@@ -774,11 +790,10 @@
       p.a *= 0.99;                       // thins out as it disperses
       if (p.y < 0.02 || p.a < 0.012) Object.assign(p, spawnSteam(false));
       const px = p.x * W, py = p.y * H;
-      const sg = ctx.createRadialGradient(px, py, 0, px, py, p.r);
-      sg.addColorStop(0, `rgba(255,251,234,${p.a})`);
-      sg.addColorStop(1, "rgba(255,251,234,0)");
-      ctx.fillStyle = sg;
-      ctx.beginPath(); ctx.arc(px, py, p.r, 0, Math.PI * 2); ctx.fill();
+      // drawImage the baked puff instead of building a gradient per particle;
+      // per-particle alpha (× scene fade) rides on globalAlpha.
+      ctx.globalAlpha = fade * p.a;
+      ctx.drawImage(PUFF, px - p.r, py - p.r, p.r * 2, p.r * 2);
     }
     ctx.restore();
 
