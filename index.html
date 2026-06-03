@@ -868,7 +868,7 @@
 
     // glowing stove / coals on the left
     const stoveX = cx - W * 0.34, stoveY = groundY - H * 0.02;
-    const glow = 0.6 + 0.4 * Math.sin(t * 6 + Math.sin(t * 2.3));
+    const glow = 0.9; // steady embers — no flicker; this is a focus timer, not a fire to watch
     // broad radiant heat washing the whole room from the stove
     const bloom = ctx.createRadialGradient(stoveX, stoveY, 10, stoveX, stoveY, Math.max(W, H) * 0.6);
     bloom.addColorStop(0, `rgba(230,118,53,${0.2 * glow})`); // Orange 6
