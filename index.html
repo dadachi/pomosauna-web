@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>PomoSauna — Monk's Pomodoro Sauna</title>
 <meta name="description" content="PomoSauna is a calm Pomodoro focus timer: a monk meditates through 25 minutes of sauna heat, then cools beneath a waterfall. Synthesized ambient sound, no sign-up." />
-<meta name="theme-color" content="#8D2B0B" />
+<meta name="theme-color" content="#8C3D10" />
 <!-- Open Graph / social -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="PomoSauna — focus, then totonou" />
@@ -14,20 +14,20 @@
 <meta name="twitter:card" content="summary_large_image" />
 <style>
   :root {
-    /* Refactoring UI — Palette 6 (see docs/palette-6.md) */
-    --sauna-1: #8D2B0B; /* Yellow 1 */
-    --sauna-2: #B44D12; /* Yellow 2 */
-    --water-1: #044E54; /* Cyan 1 */
-    --water-2: #14919B; /* Cyan 4 */
-    --ink: #FAF9F7;     /* Warm Grey 10 */
-    --ring-sauna: #F7C948; /* Yellow 6 */
-    --ring-water: #5ED0FA; /* Light Blue (Vivid) 7 — Deep Pool default ring */
+    /* Refactoring UI — Palette 8 (see docs-private/palette-8.md) */
+    --sauna-1: #8C3D10; /* Orange 3 */
+    --sauna-2: #AB4E19; /* Orange 4 */
+    --water-1: #002159; /* Blue (Vivid) 1 — abyss */
+    --water-2: #0552B5; /* Blue (Vivid) 4 */
+    --ink: #F5F7FA;     /* Cool Grey 10 */
+    --ring-sauna: #F7C948; /* Yellow (Vivid) 6 — warm-on-warm sauna highlight */
+    --ring-water: #47A3F3; /* Blue (Vivid) 7 — default water ring */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
     font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
-    background: #27241D;
+    background: #1F2933;
     overflow: hidden;
     -webkit-user-select: none;
     user-select: none;
@@ -52,7 +52,7 @@
     z-index: 10;
     text-align: center;
     color: var(--ink);
-    text-shadow: 0 2px 12px rgba(39,36,29,0.7);
+    text-shadow: 0 2px 12px rgba(31,41,51,0.7);
     pointer-events: none;
     --ring: var(--ring-sauna); /* progress-ring colour, set per phase */
   }
@@ -67,10 +67,10 @@
     overflow: visible;
     pointer-events: none;
   }
-  .ring-track { fill: none; stroke: rgba(250,249,247,0.13); stroke-width: 2.5; }
+  .ring-track { fill: none; stroke: rgba(245,247,250,0.13); stroke-width: 2.5; }
   .ring-progress {
     fill: none; stroke: var(--ring); stroke-width: 3; stroke-linecap: round;
-    filter: drop-shadow(0 0 5px rgba(39,36,29,0.4));
+    filter: drop-shadow(0 0 5px rgba(31,41,51,0.4));
     transition: stroke 0.6s ease;
   }
   .ring-knob { fill: var(--ring); transition: fill 0.6s ease; }
@@ -87,9 +87,9 @@
     padding: 0; cursor: pointer; pointer-events: auto;
     transition: background 0.2s ease;
   }
-  .ring-tap:hover { background: radial-gradient(circle, rgba(250,249,247,0.06), transparent 70%); }
+  .ring-tap:hover { background: radial-gradient(circle, rgba(245,247,250,0.06), transparent 70%); }
   .ring-tap:active { transform: translate(-50%, -50%) scale(0.985); }
-  .ring-tap:focus-visible { outline: 2px solid rgba(250,249,247,0.4); outline-offset: 2px; }
+  .ring-tap:focus-visible { outline: 2px solid rgba(245,247,250,0.4); outline-offset: 2px; }
   .phase-label {
     font-size: clamp(18px, 4vw, 30px);
     letter-spacing: 0.35em;
@@ -137,18 +137,18 @@
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--ink);
-    background: rgba(39,36,29,0.28);
-    border: 1px solid rgba(250,249,247,0.4);
+    background: rgba(31,41,51,0.28);
+    border: 1px solid rgba(245,247,250,0.4);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     padding: 13px 26px;
     border-radius: 999px;
     transition: transform .12s ease, background .2s ease, border-color .2s ease;
   }
-  button:hover { background: rgba(250,249,247,0.16); border-color: rgba(250,249,247,0.8); }
+  button:hover { background: rgba(245,247,250,0.16); border-color: rgba(245,247,250,0.8); }
   button:active { transform: scale(0.94); }
-  button.primary { background: rgba(250,249,247,0.92); color: #27241D; font-weight: 600; border-color: transparent; }
-  button.primary:hover { background: #FAF9F7; }
+  button.primary { background: rgba(245,247,250,0.92); color: #1F2933; font-weight: 600; border-color: transparent; }
+  button.primary:hover { background: #F5F7FA; }
   button.off { opacity: 0.4; text-decoration: line-through; }
   #start-overlay {
     position: absolute;
@@ -159,7 +159,7 @@
     align-items: center;
     justify-content: center;
     gap: 26px;
-    background: rgba(39,36,29,0.55);
+    background: rgba(31,41,51,0.55);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     color: var(--ink);
@@ -179,20 +179,20 @@
     border-bottom: 1px solid transparent;
     transition: opacity .2s ease, border-color .2s ease;
   }
-  .support-link:hover { opacity: 0.9; border-bottom-color: rgba(250,249,247,0.5); }
+  .support-link:hover { opacity: 0.9; border-bottom-color: rgba(245,247,250,0.5); }
   .hidden { display: none !important; }
 
   /* ---- Sound mixer ---- */
   #mixer {
     position: absolute; inset: 0; z-index: 40;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(39,36,29,0.5);
+    background: rgba(31,41,51,0.5);
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     padding: 24px;
   }
   .mixer-card {
-    background: rgba(39,36,29,0.86);
-    border: 1px solid rgba(250,249,247,0.25);
+    background: rgba(31,41,51,0.86);
+    border: 1px solid rgba(245,247,250,0.25);
     border-radius: 18px;
     padding: 26px 28px;
     width: min(440px, 92vw);
@@ -204,7 +204,7 @@
     font-size: 20px; text-align: center;
   }
   .mix-phase { display: flex; flex-direction: column; gap: 16px; }
-  .mix-phase + .mix-phase { padding-top: 16px; border-top: 1px solid rgba(250,249,247,0.14); }
+  .mix-phase + .mix-phase { padding-top: 16px; border-top: 1px solid rgba(245,247,250,0.14); }
   .mix-phase-title { font-weight: 300; letter-spacing: 0.18em; text-transform: uppercase; font-size: 13px; opacity: 0.7; }
   .mix-channel { display: flex; flex-direction: column; gap: 8px; }
   .mix-row { display: grid; grid-template-columns: 132px 1fr; align-items: center; gap: 14px; }
@@ -213,21 +213,21 @@
   .mix-vol:disabled { opacity: 0.3; cursor: default; }
   .mix-pick {
     width: 100%; font-family: inherit; font-size: 12px; letter-spacing: 0.06em;
-    color: var(--ink); background: rgba(39,36,29,0.3);
-    border: 1px solid rgba(250,249,247,0.3); border-radius: 8px;
+    color: var(--ink); background: rgba(31,41,51,0.3);
+    border: 1px solid rgba(245,247,250,0.3); border-radius: 8px;
     padding: 7px 10px; cursor: pointer;
   }
-  .mix-pick option { color: #27241D; }
+  .mix-pick option { color: #1F2933; }
   /* waterfall colour-theme picker */
   .theme-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .theme-opt {
     display: inline-flex; align-items: center; gap: 8px;
     font-size: 12px; letter-spacing: 0.1em; padding: 9px 14px;
   }
-  .theme-opt.active { background: rgba(250,249,247,0.16); border-color: rgba(250,249,247,0.85); }
+  .theme-opt.active { background: rgba(245,247,250,0.16); border-color: rgba(245,247,250,0.85); }
   .theme-swatch {
     width: 14px; height: 14px; border-radius: 50%;
-    border: 1px solid rgba(250,249,247,0.4); flex: none;
+    border: 1px solid rgba(245,247,250,0.4); flex: none;
   }
 </style>
 </head>
@@ -332,6 +332,19 @@
   // gradient stops; the rest are ready-to-use fill/stroke strings (alpha baked
   // in). Every colour stays within the extended Palette 6 (see check-palette.py).
   const WATER_THEMES = {
+    blue: {
+      name: "Blue",
+      bg: [[0, "#2186EB"], [0.5, "#0552B5"], [1, "#002159"]],
+      rock: [[0, "#2186EB"], [0.45, "#0552B5"], [0.8, "#01337D"], [1, "#002159"]],
+      fall: ["rgba(230,246,255,0.6)", "rgba(186,227,255,0.32)"],
+      streak: "rgba(230,246,255,0.25)",
+      monk: { robe: "#03449E", robe2: "#002159" },
+      pool: "rgba(33,134,235,0.5)",
+      ripple: "rgba(230,246,255,0.25)",
+      drop: "rgba(230,246,255,0.7)",
+      vignette: "rgba(0,33,89,0.4)",
+      ring: "#47A3F3",
+    },
     teal: {
       name: "Teal",
       bg: [[0, "#38BEC9"], [0.55, "#14919B"], [1, "#0A6C74"]],
@@ -372,8 +385,8 @@
       ring: "#5ED0FA",
     },
   };
-  const WATER_THEME_ORDER = ["teal", "sky", "deep"];
-  const DEFAULT_WATER_THEME = "deep"; // indigo->cyan hybrid (used until a user picks)
+  const WATER_THEME_ORDER = ["blue", "teal", "sky", "deep"];
+  const DEFAULT_WATER_THEME = "blue"; // Palette 8 Blue (Vivid) hero
 
   function loadWaterTheme() {
     try {
@@ -768,8 +781,8 @@
     c.width = c.height = size;
     const g = c.getContext("2d");
     const grad = g.createRadialGradient(half, half, 0, half, half, half);
-    grad.addColorStop(0, "rgba(255,251,234,1)");
-    grad.addColorStop(1, "rgba(255,251,234,0)");
+    grad.addColorStop(0, "rgba(255,239,230,1)");
+    grad.addColorStop(1, "rgba(255,239,230,0)");
     g.fillStyle = grad;
     g.fillRect(0, 0, size, size);
     return c;
@@ -814,9 +827,9 @@
     // Background gradient
     const g = ctx.createLinearGradient(0, 0, 0, H);
     if (isSauna) {
-      g.addColorStop(0, "#B44D12");
-      g.addColorStop(0.5, "#8D2B0B");
-      g.addColorStop(1, "#27241D");
+      g.addColorStop(0, "#AB4E19");
+      g.addColorStop(0.5, "#8C3D10");
+      g.addColorStop(1, "#1F2933");
     } else {
       // water background — ramp comes from the active waterfall colour theme
       for (const [off, col] of waterThemeDef().bg) g.addColorStop(off, col);
@@ -841,15 +854,15 @@
     const plankH = Math.max(26, H / 16);
     for (let y = 0; y < groundY; y += plankH) {
       const shade = 0.5 + 0.5 * Math.sin((y / plankH) * 1.7);
-      ctx.fillStyle = `rgba(180,77,18,${0.12 + shade * 0.16})`; // Yellow 2, plank grain
+      ctx.fillStyle = `rgba(171,78,25,${0.12 + shade * 0.16})`; // Orange 4, plank grain
       ctx.fillRect(0, y, W, 2);
     }
     ctx.restore();
 
     // bench
-    ctx.fillStyle = "#CB6E17";
+    ctx.fillStyle = "#C65D21";
     ctx.fillRect(cx - W * 0.30, groundY, W * 0.60, H * 0.05);
-    ctx.fillStyle = "#8D2B0B";
+    ctx.fillStyle = "#8C3D10";
     ctx.fillRect(cx - W * 0.30, groundY + H * 0.05, W * 0.60, H * 0.02);
 
     // glowing stove / coals on the left
@@ -860,15 +873,15 @@
     rg.addColorStop(1, "rgba(240,180,41,0)");
     ctx.fillStyle = rg;
     ctx.fillRect(stoveX - 90, stoveY - 90, 180, 120);
-    ctx.fillStyle = "#27241D";
+    ctx.fillStyle = "#1F2933";
     ctx.fillRect(stoveX - 26, stoveY - 6, 52, 40);
-    ctx.fillStyle = `rgba(247,201,72,${0.55 + glow * 0.35})`; // Yellow 6, glowing coals
+    ctx.fillStyle = `rgba(247,201,72,${0.55 + glow * 0.35})`; // Yellow (Vivid) 6, glowing coals
     ctx.fillRect(stoveX - 20, stoveY - 2, 40, 10);
 
     // monk sitting on bench, gentle breathing bob
     const bob = Math.sin(t * 1.3) * 4;
     drawMonk(cx + W * 0.08, groundY - H * 0.005 + bob, Math.min(H, W) * 0.16, {
-      robe: "#CB6E17", robe2: "#8D2B0B", sitting: true,
+      robe: "#C65D21", robe2: "#8C3D10", sitting: true,
     });
 
     // steam billowing vigorously up from the stones
@@ -890,7 +903,7 @@
     ctx.restore();
 
     // warm vignette
-    vignette("rgba(39,36,29,0.55)");
+    vignette("rgba(31,41,51,0.55)");
   }
 
   // ---- Waterfall scene ----
@@ -1030,20 +1043,20 @@
     }
 
     // hands resting together in the lap (dhyana mudra)
-    ctx.fillStyle = "#FFF3C4";
+    ctx.fillStyle = "#FFD3BA";
     ctx.beginPath();
     ctx.ellipse(0, lapY + s * 0.04, s * 0.15, s * 0.07, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // head
     const headY = bodyTop;
-    ctx.fillStyle = "#FFF3C4";
+    ctx.fillStyle = "#FFD3BA";
     ctx.beginPath();
     ctx.arc(0, headY, headR, 0, Math.PI * 2);
     ctx.fill();
 
     // serene meditating face — eyes gently closed, mouth calm
-    ctx.strokeStyle = "rgba(39,36,29,0.78)";
+    ctx.strokeStyle = "rgba(31,41,51,0.78)";
     ctx.lineWidth = Math.max(1.5, headR * 0.06);
     ctx.lineCap = "round";
     // closed, softly downcast eyelids
@@ -1056,7 +1069,7 @@
       ctx.stroke();
     }
     // calm, barely-there mouth
-    ctx.strokeStyle = "rgba(39,36,29,0.55)";
+    ctx.strokeStyle = "rgba(31,41,51,0.55)";
     ctx.beginPath();
     ctx.moveTo(-headR * 0.16, headY + headR * 0.34);
     ctx.quadraticCurveTo(0, headY + headR * 0.4, headR * 0.16, headY + headR * 0.34);
@@ -1067,7 +1080,7 @@
 
   function vignette(color) {
     const vg = ctx.createRadialGradient(W / 2, H * 0.5, Math.min(W, H) * 0.2, W / 2, H * 0.5, Math.max(W, H) * 0.75);
-    vg.addColorStop(0, "rgba(39,36,29,0)");
+    vg.addColorStop(0, "rgba(31,41,51,0)");
     vg.addColorStop(1, color);
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
