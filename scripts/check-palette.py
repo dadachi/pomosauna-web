@@ -10,13 +10,18 @@ Usage: python3 scripts/check-palette.py [file ...]   (defaults to index.html)
 import re
 import sys
 
-# Refactoring UI — Palette 6: Red, Yellow, Warm Grey, Cyan, Lime Green
+# Refactoring UI — Palette 6: Red, Yellow, Warm Grey, Cyan, Lime Green.
+# The user-selectable waterfall themes also draw from Light Blue (Vivid), plus
+# Light Blue (std) 1 (#0B4F71) and Palette 8 Blue (Vivid) 1/2 (#002159, #01337D)
+# for the deepest plunge-pool tones — see docs-private/palette-6.md.
 PALETTE_HEX = """
 610404 780A0A 911111 A61B1B BA2525 D64545 E66A6A F29B9B FACDCD FFEEEE
 8D2B0B B44D12 CB6E17 DE911D F0B429 F7C948 FADB5F FCE588 FFF3C4 FFFBEA
 27241D 423D33 504A40 625D52 857F72 A39E93 B8B2A7 D3CEC4 E8E6E1 FAF9F7
 044E54 0A6C74 0E7C86 14919B 2CB1BC 38BEC9 54D1DB 87EAF2 BEF8FD E0FCFF
 2B4005 42600C 507712 63921A 7BB026 94C843 ABDB5E C7EA8F E2F7C2 F2FDE0
+035388 0B69A3 127FBF 1992D4 2BB0ED 40C3F7 5ED0FA 81DEFD B3ECFF E3F8FF
+0B4F71 002159 01337D
 """.split()
 
 
