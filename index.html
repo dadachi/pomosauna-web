@@ -597,6 +597,7 @@
       if (!silent) playCue(PHASE.WATER);
       startAmbient(PHASE.WATER);
     }
+    renderPending = true; // repaint the new scene once even if currently paused
     updateHud();
   }
 
@@ -634,6 +635,16 @@
   }
 
   // ---------- Main loop ----------
+  // Repaint gate: while paused the scene is frozen, so skip the (fairly heavy)
+  // canvas work every frame and just leave the last frame on screen. We still
+  // paint while the start overlay is up (its translucent backdrop shows the
+  // live scene) and one-shot when `renderPending` is set — e.g. after a resize
+  // clears the canvas, or a phase change while paused.
+  let renderPending = true;
+  function shouldRender() {
+    return state.running || renderPending || !startOverlay.classList.contains("hidden");
+  }
+
   function tick(now) {
     if (state.running) {
       if (!state.lastTick) state.lastTick = now;
@@ -647,7 +658,10 @@
     } else {
       state.lastTick = now;
     }
-    render(now);
+    if (shouldRender()) {
+      render(now);
+      renderPending = false;
+    }
     requestAnimationFrame(tick);
   }
 
@@ -659,6 +673,7 @@
     canvas.width = Math.floor(W * DPR);
     canvas.height = Math.floor(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    renderPending = true; // changing canvas size clears it — repaint once even if paused
   }
   window.addEventListener("resize", resize);
 
