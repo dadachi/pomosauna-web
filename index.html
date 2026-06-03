@@ -21,7 +21,7 @@
     --water-2: #14919B; /* Cyan 4 */
     --ink: #FAF9F7;     /* Warm Grey 10 */
     --ring-sauna: #F7C948; /* Yellow 6 */
-    --ring-water: #54D1DB; /* Cyan 7 */
+    --ring-water: #5ED0FA; /* Light Blue (Vivid) 7 — Deep Pool default ring */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -373,7 +373,7 @@
     },
   };
   const WATER_THEME_ORDER = ["teal", "sky", "deep"];
-  const DEFAULT_WATER_THEME = "teal"; // matches the look currently on main
+  const DEFAULT_WATER_THEME = "deep"; // indigo->cyan hybrid (used until a user picks)
 
   function loadWaterTheme() {
     try {
