@@ -485,6 +485,11 @@
     if (!audio.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       audio.ctx = new AC();
+      // iOS: route audio like a media app so it plays through the hardware
+      // silent/ringer switch (Safari 16.4+). Without this, synthesized Web
+      // Audio is treated as ambient and muted when the phone is on silent —
+      // the usual "no sound on mobile" cause.
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
     }
     if (audio.ctx.state === "suspended") audio.ctx.resume();
     return audio.ctx;
