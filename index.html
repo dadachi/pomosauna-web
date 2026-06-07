@@ -39,7 +39,8 @@
   #app {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: 100vh; /* fallback for browsers without dvh */
+    height: 100dvh; /* track the dynamic viewport so controls clear the mobile URL bar */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -161,7 +162,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: safe center; /* fall back to top-aligned + scroll when too short */
+    overflow-y: auto;
     gap: 26px;
     background: rgba(31,41,51,0.55);
     backdrop-filter: blur(3px);
@@ -189,12 +191,13 @@
   /* ---- Sound mixer ---- */
   #mixer {
     position: absolute; inset: 0; z-index: 40;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; overflow-y: auto;
     background: rgba(31,41,51,0.5);
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     padding: 24px;
   }
   .mixer-card {
+    margin: auto; /* centres when it fits, scrolls without clipping when it doesn't */
     background: rgba(31,41,51,0.86);
     border: 1px solid rgba(245,247,250,0.25);
     border-radius: 18px;
