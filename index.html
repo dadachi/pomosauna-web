@@ -193,6 +193,26 @@
     transition: opacity .2s ease, border-color .2s ease;
   }
   .support-link:hover { opacity: 0.9; border-bottom-color: rgba(245,247,250,0.5); }
+  /* "Add to Home Screen for fullscreen" hint — iOS Safari only, dismissable */
+  .a2hs-hint {
+    display: flex; align-items: center; gap: 8px;
+    max-width: 320px;
+    margin-top: -6px; /* nestle under the support link */
+    font-size: 12.5px; line-height: 1.5; letter-spacing: 0.02em;
+    opacity: 0.6; color: var(--ink);
+  }
+  .a2hs-hint b { font-weight: 500; opacity: 0.95; }
+  .a2hs-share { /* the iOS Share glyph: a box with an up-arrow */
+    display: inline-block; transform: translateY(1px); font-size: 14px;
+  }
+  .a2hs-dismiss {
+    flex: none;
+    background: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+    border-radius: 6px; padding: 2px 6px;
+    font-size: 17px; line-height: 1; letter-spacing: 0; text-transform: none;
+    opacity: 0.7;
+  }
+  .a2hs-dismiss:hover { background: rgba(245,247,250,0.12); border-color: transparent; opacity: 1; }
   .hidden { display: none !important; }
 
   /* ---- Sound mixer ---- */
@@ -278,6 +298,10 @@
        Work alongside him.</p>
     <button id="beginBtn" class="primary">Enter the sauna</button>
     <a class="support-link" href="https://github.com/sponsors/dadachi" target="_blank" rel="noopener noreferrer">♡ Support</a>
+    <p id="a2hsHint" class="a2hs-hint hidden">
+      <span>For fullscreen, tap Share <span class="a2hs-share" aria-hidden="true">⎙</span> then <b>Add to Home Screen</b>.</span>
+      <button id="a2hsDismiss" aria-label="Dismiss hint" title="Dismiss" class="a2hs-dismiss">×</button>
+    </p>
   </div>
 
   <div id="mixer" class="hidden">
@@ -1346,10 +1370,36 @@
     }
   });
 
+  // ---------- "Add to Home Screen for fullscreen" hint ----------
+  // iOS Safari won't hide its chrome on a non-scrolling page, and has no
+  // Fullscreen API — standalone (Home Screen) is the only chromeless route.
+  // Nudge toward it, but only where it applies and only until dismissed.
+  function initA2HSHint() {
+    const hint = document.getElementById("a2hsHint");
+    const dismiss = document.getElementById("a2hsDismiss");
+    if (!hint || !dismiss) return;
+    const HINT_KEY = "pomosauna.a2hsHintDismissed";
+    const standalone = navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    const ua = navigator.userAgent;
+    const isIOS = /iP(hone|od|ad)/.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); // iPadOS poses as Mac
+    const isSafari = !/CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua); // not Chrome/Firefox/Edge/Opera/Google-app on iOS
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(HINT_KEY) === "1"; } catch (e) {}
+    if (standalone || !isIOS || !isSafari || dismissed) return; // already fullscreen, or N/A
+    hint.classList.remove("hidden");
+    dismiss.addEventListener("click", () => {
+      hint.classList.add("hidden");
+      try { localStorage.setItem(HINT_KEY, "1"); } catch (e) {}
+    });
+  }
+
   // ---------- Boot ----------
   resize();
   updateHud();
   applyWaterTheme(); // apply the saved waterfall colour (ring var + first paint)
+  initA2HSHint();
   requestAnimationFrame(tick);
 })();
 </script>
