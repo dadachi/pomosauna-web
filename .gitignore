@@ -3,3 +3,6 @@ docs-private/
 *.png
 # keep the social-share image (a real asset, not a scratch screenshot)
 !og-preview.png
+# keep the favicon / touch-icon PNGs (real tracked assets)
+!apple-touch-icon.png
+!favicon-32.png
