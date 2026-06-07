@@ -2,10 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>PomoSauna — Monk's Pomodoro Sauna</title>
 <meta name="description" content="PomoSauna is a calm Pomodoro focus timer: a monk meditates through 25 minutes of sauna heat, then cools beneath a waterfall. Synthesized ambient sound, no sign-up." />
 <meta name="theme-color" content="#572508" /><!-- Orange 1 — sauna deep ember (Palette 8) -->
+<!-- Add to Home Screen → launch chromeless (no Safari toolbar). The only way to get a
+     truly fullscreen, immersive view on iOS/iPadOS; Safari won't hide its chrome on a
+     non-scrolling page. -->
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="PomoSauna" />
 <!-- Favicons (relative hrefs so they resolve under the /pomosauna-web/ Pages subpath) -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
