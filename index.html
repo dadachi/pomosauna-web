@@ -781,6 +781,12 @@
     renderPending = true; // changing canvas size clears it — repaint once even if paused
   }
   window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", resize);
+  // Re-sync the pixel buffer on ANY change to the canvas box — rotation, the
+  // standalone-mode transition, and dvh toolbar shifts can resize the element
+  // without a timely `resize` event, leaving a stale buffer that gets stretched
+  // (the monk and whole scene skew). ResizeObserver catches all of them.
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
 
   // the sauna stones sit here (normalized) — steam billows up from them
   const STONES_X = 0.16, STONES_Y = 0.79;
