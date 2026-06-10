@@ -1398,13 +1398,10 @@
   mixer.addEventListener("click", (e) => { if (e.target === mixer) closeMixer(); });
 
   // ---------- Notify-me (iOS waitlist) ----------
-  // TODO(before launch): replace YOUR_BUTTONDOWN_USERNAME with the real Buttondown
-  // username, or swap NOTIFY_ENDPOINT for your MailerLite embed URL. The endpoint
-  // is public (no secret key belongs in client code). mode:"no-cors" is
-  // fire-and-forget — we can't read the response, so we optimistically confirm,
-  // which is fine for a demand probe. While the placeholder is still in place the
-  // network call is skipped, so no bogus requests go out during testing.
-  const NOTIFY_ENDPOINT = "https://buttondown.com/api/emails/embed-subscribe/YOUR_BUTTONDOWN_USERNAME";
+  // Posts to Buttondown's public embed endpoint (it's public — no secret key
+  // belongs in client code). mode:"no-cors" is fire-and-forget: we can't read the
+  // response, so we optimistically confirm, which is fine for a demand probe.
+  const NOTIFY_ENDPOINT = "https://buttondown.com/api/emails/embed-subscribe/adachi";
   const notifyForm = document.getElementById("notifyForm");
   const notifyDone = document.getElementById("notifyDone");
   if (notifyForm && notifyDone) {
@@ -1412,13 +1409,9 @@
       e.preventDefault();
       const submitBtn = notifyForm.querySelector("button");
       if (submitBtn) submitBtn.disabled = true;
-      if (NOTIFY_ENDPOINT.includes("YOUR_BUTTONDOWN_USERNAME")) {
-        console.warn("[notify] Placeholder endpoint in use — set NOTIFY_ENDPOINT to your real Buttondown/MailerLite URL before launch. No email was recorded.");
-      } else {
-        try {
-          await fetch(NOTIFY_ENDPOINT, { method: "POST", mode: "no-cors", body: new FormData(notifyForm) });
-        } catch (err) { /* optimistic: confirm anyway (probe) */ }
-      }
+      try {
+        await fetch(NOTIFY_ENDPOINT, { method: "POST", mode: "no-cors", body: new FormData(notifyForm) });
+      } catch (err) { /* optimistic: confirm anyway (probe) */ }
       notifyForm.classList.add("hidden");
       notifyDone.classList.remove("hidden");
     });
