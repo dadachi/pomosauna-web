@@ -3,6 +3,10 @@
 A calm Pomodoro focus timer. A monk meditates through 25 minutes of sauna heat,
 then cools beneath a waterfall — work alongside him.
 
+| Focus — 25 min sauna | Break — 5 min waterfall |
+| :---: | :---: |
+| ![The sauna phase: a monk meditates in the heat](screenshot-sauna.png) | ![The waterfall phase: the monk cools beneath the falls](screenshot-water.png) |
+
 **Live:** https://dadachi.github.io/pomosauna-web/
 
 - A single static `index.html` — vanilla JS, Canvas, and Web Audio. No build

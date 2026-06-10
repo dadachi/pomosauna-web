@@ -6,4 +6,7 @@ docs-private/
 # keep the favicon / touch-icon PNGs (real tracked assets)
 !apple-touch-icon.png
 !favicon-32.png
+# keep the README hero screenshots (real tracked assets)
+!screenshot-sauna.png
+!screenshot-water.png
 .gstack/
