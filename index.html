@@ -193,6 +193,36 @@
     transition: opacity .2s ease, border-color .2s ease;
   }
   .support-link:hover { opacity: 0.9; border-bottom-color: rgba(245,247,250,0.5); }
+  /* ---- Notify-me (iOS waitlist) ---- */
+  .notify {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    width: 100%; max-width: 380px;
+  }
+  .notify-label {
+    font-size: 13px; line-height: 1.55; letter-spacing: 0.03em;
+    opacity: 0.72; color: var(--ink);
+  }
+  .notify-row { display: flex; gap: 8px; width: 100%; }
+  .notify-row input {
+    flex: 1 1 auto; min-width: 0;
+    font-family: inherit; font-size: 15px; letter-spacing: 0.02em;
+    color: var(--ink);
+    background: rgba(31,41,51,0.28);
+    border: 1px solid rgba(245,247,250,0.4);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    padding: 13px 20px;
+    border-radius: 999px;
+    outline: none;
+    transition: background .2s ease, border-color .2s ease;
+  }
+  .notify-row input::placeholder { color: var(--ink); opacity: 0.4; }
+  .notify-row input:focus { background: rgba(245,247,250,0.12); border-color: rgba(245,247,250,0.85); }
+  .notify-row button { flex: none; }
+  .notify-done {
+    width: 100%; max-width: 380px;
+    font-size: 13.5px; line-height: 1.6; letter-spacing: 0.02em;
+    opacity: 0.85; color: var(--ink);
+  }
   /* "Add to Home Screen for fullscreen" hint — iOS Safari only, dismissable */
   .a2hs-hint {
     display: flex; align-items: center; gap: 8px;
@@ -298,6 +328,15 @@
        Work alongside him.</p>
     <button id="beginBtn" class="primary">Enter the sauna</button>
     <a class="support-link" href="https://github.com/sponsors/dadachi" target="_blank" rel="noopener noreferrer">♡ Support</a>
+    <form id="notifyForm" class="notify">
+      <label class="notify-label" for="notifyEmail">A native iOS app is coming — get one quiet heads-up when it lands.</label>
+      <div class="notify-row">
+        <input id="notifyEmail" name="email" type="email" inputmode="email" autocomplete="email"
+               placeholder="you@email.com" aria-label="Email address" required />
+        <button type="submit">Notify me</button>
+      </div>
+    </form>
+    <p id="notifyDone" class="notify-done hidden">One more step — check your inbox and tap confirm. After that, you'll hear from us exactly once: when PomoSauna for iOS lands.</p>
     <p id="a2hsHint" class="a2hs-hint hidden">
       <span>For fullscreen, tap Share <span class="a2hs-share" aria-hidden="true">⎙</span> then <b>Add to Home Screen</b>.</span>
       <button id="a2hsDismiss" aria-label="Dismiss hint" title="Dismiss" class="a2hs-dismiss">×</button>
@@ -1357,6 +1396,26 @@
   soundBtn.addEventListener("click", toggleMixer);
   mixerClose.addEventListener("click", closeMixer);
   mixer.addEventListener("click", (e) => { if (e.target === mixer) closeMixer(); });
+
+  // ---------- Notify-me (iOS waitlist) ----------
+  // Posts to Buttondown's public embed endpoint (it's public — no secret key
+  // belongs in client code). mode:"no-cors" is fire-and-forget: we can't read the
+  // response, so we optimistically confirm, which is fine for a demand probe.
+  const NOTIFY_ENDPOINT = "https://buttondown.com/api/emails/embed-subscribe/adachi";
+  const notifyForm = document.getElementById("notifyForm");
+  const notifyDone = document.getElementById("notifyDone");
+  if (notifyForm && notifyDone) {
+    notifyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = notifyForm.querySelector("button");
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        await fetch(NOTIFY_ENDPOINT, { method: "POST", mode: "no-cors", body: new FormData(notifyForm) });
+      } catch (err) { /* optimistic: confirm anyway (probe) */ }
+      notifyForm.classList.add("hidden");
+      notifyDone.classList.remove("hidden");
+    });
+  }
 
   // Keyboard: space = pause/resume
   window.addEventListener("keydown", (e) => {

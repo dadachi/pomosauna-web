@@ -6,3 +6,4 @@ docs-private/
 # keep the favicon / touch-icon PNGs (real tracked assets)
 !apple-touch-icon.png
 !favicon-32.png
+.gstack/
