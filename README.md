@@ -8,6 +8,7 @@ then cools beneath a waterfall — work alongside him.
 | ![The sauna phase: a monk meditates in the heat](screenshot-sauna.png) | ![The waterfall phase: the monk cools beneath the falls](screenshot-water.png) |
 
 **Live:** https://dadachi.github.io/pomosauna-web/
+**iPhone:** [PomoSauna on the App Store](https://apps.apple.com/app/pomosauna/id6810986168)
 
 - A single static `index.html` — vanilla JS, Canvas, and Web Audio. No build
   step, no dependencies, no sign-up.

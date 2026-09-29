@@ -13,6 +13,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="PomoSauna" />
+<!-- Smart App Banner: Safari on iOS offers the native app at the top of the page. -->
+<meta name="apple-itunes-app" content="app-id=6810986168" />
 <!-- Favicons (relative hrefs so they resolve under the /pomosauna-web/ Pages subpath) -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png" />
@@ -193,56 +195,17 @@
     transition: opacity .2s ease, border-color .2s ease;
   }
   .support-link:hover { opacity: 0.9; border-bottom-color: rgba(245,247,250,0.5); }
-  /* ---- Notify-me (iOS waitlist) ---- */
-  .notify {
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    width: 100%; max-width: 380px;
-  }
-  .notify-label {
-    font-size: 13px; line-height: 1.55; letter-spacing: 0.03em;
-    opacity: 0.72; color: var(--ink);
-  }
-  .notify-row { display: flex; gap: 8px; width: 100%; }
-  .notify-row input {
-    flex: 1 1 auto; min-width: 0;
-    font-family: inherit; font-size: 15px; letter-spacing: 0.02em;
-    color: var(--ink);
-    background: rgba(31,41,51,0.28);
+  /* ---- Native iOS app link ---- */
+  .app-link {
+    color: var(--ink); opacity: 0.72;
+    font-size: 13px; letter-spacing: 0.03em;
+    text-decoration: none;
     border: 1px solid rgba(245,247,250,0.4);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    padding: 13px 20px;
     border-radius: 999px;
-    outline: none;
-    transition: background .2s ease, border-color .2s ease;
+    padding: 10px 20px;
+    transition: opacity .2s ease, background .2s ease, border-color .2s ease;
   }
-  .notify-row input::placeholder { color: var(--ink); opacity: 0.4; }
-  .notify-row input:focus { background: rgba(245,247,250,0.12); border-color: rgba(245,247,250,0.85); }
-  .notify-row button { flex: none; }
-  .notify-done {
-    width: 100%; max-width: 380px;
-    font-size: 13.5px; line-height: 1.6; letter-spacing: 0.02em;
-    opacity: 0.85; color: var(--ink);
-  }
-  /* "Add to Home Screen for fullscreen" hint — iOS Safari only, dismissable */
-  .a2hs-hint {
-    display: flex; align-items: center; gap: 8px;
-    max-width: 320px;
-    margin-top: -6px; /* nestle under the support link */
-    font-size: 12.5px; line-height: 1.5; letter-spacing: 0.02em;
-    opacity: 0.6; color: var(--ink);
-  }
-  .a2hs-hint b { font-weight: 500; opacity: 0.95; }
-  .a2hs-share { /* the iOS Share glyph: a box with an up-arrow */
-    display: inline-block; transform: translateY(1px); font-size: 14px;
-  }
-  .a2hs-dismiss {
-    flex: none;
-    background: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none;
-    border-radius: 6px; padding: 2px 6px;
-    font-size: 17px; line-height: 1; letter-spacing: 0; text-transform: none;
-    opacity: 0.7;
-  }
-  .a2hs-dismiss:hover { background: rgba(245,247,250,0.12); border-color: transparent; opacity: 1; }
+  .app-link:hover { opacity: 1; background: rgba(245,247,250,0.12); border-color: rgba(245,247,250,0.85); }
   .hidden { display: none !important; }
 
   /* ---- Sound mixer ---- */
@@ -328,19 +291,7 @@
        Work alongside him.</p>
     <button id="beginBtn" class="primary">Enter the sauna</button>
     <a class="support-link" href="https://github.com/sponsors/dadachi" target="_blank" rel="noopener noreferrer">♡ Support</a>
-    <form id="notifyForm" class="notify">
-      <label class="notify-label" for="notifyEmail">A native iOS app is coming — get one quiet heads-up when it lands.</label>
-      <div class="notify-row">
-        <input id="notifyEmail" name="email" type="email" inputmode="email" autocomplete="email"
-               placeholder="you@email.com" aria-label="Email address" required />
-        <button type="submit">Notify me</button>
-      </div>
-    </form>
-    <p id="notifyDone" class="notify-done hidden">One more step — check your inbox and tap confirm. After that, you'll hear from us exactly once: when PomoSauna for iOS lands.</p>
-    <p id="a2hsHint" class="a2hs-hint hidden">
-      <span>For fullscreen, tap Share <span class="a2hs-share" aria-hidden="true">⎙</span> then <b>Add to Home Screen</b>.</span>
-      <button id="a2hsDismiss" aria-label="Dismiss hint" title="Dismiss" class="a2hs-dismiss">×</button>
-    </p>
+    <a class="app-link" href="https://apps.apple.com/app/pomosauna/id6810986168" target="_blank" rel="noopener noreferrer">PomoSauna for iPhone — on the App Store</a>
   </div>
 
   <div id="mixer" class="hidden">
@@ -1397,26 +1348,6 @@
   mixerClose.addEventListener("click", closeMixer);
   mixer.addEventListener("click", (e) => { if (e.target === mixer) closeMixer(); });
 
-  // ---------- Notify-me (iOS waitlist) ----------
-  // Posts to Buttondown's public embed endpoint (it's public — no secret key
-  // belongs in client code). mode:"no-cors" is fire-and-forget: we can't read the
-  // response, so we optimistically confirm, which is fine for a demand probe.
-  const NOTIFY_ENDPOINT = "https://buttondown.com/api/emails/embed-subscribe/adachi";
-  const notifyForm = document.getElementById("notifyForm");
-  const notifyDone = document.getElementById("notifyDone");
-  if (notifyForm && notifyDone) {
-    notifyForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const submitBtn = notifyForm.querySelector("button");
-      if (submitBtn) submitBtn.disabled = true;
-      try {
-        await fetch(NOTIFY_ENDPOINT, { method: "POST", mode: "no-cors", body: new FormData(notifyForm) });
-      } catch (err) { /* optimistic: confirm anyway (probe) */ }
-      notifyForm.classList.add("hidden");
-      notifyDone.classList.remove("hidden");
-    });
-  }
-
   // Keyboard: space = pause/resume
   window.addEventListener("keydown", (e) => {
     if (startOverlay.classList.contains("hidden") === false) return;
@@ -1434,36 +1365,10 @@
     }
   });
 
-  // ---------- "Add to Home Screen for fullscreen" hint ----------
-  // iOS Safari won't hide its chrome on a non-scrolling page, and has no
-  // Fullscreen API — standalone (Home Screen) is the only chromeless route.
-  // Nudge toward it, but only where it applies and only until dismissed.
-  function initA2HSHint() {
-    const hint = document.getElementById("a2hsHint");
-    const dismiss = document.getElementById("a2hsDismiss");
-    if (!hint || !dismiss) return;
-    const HINT_KEY = "pomosauna.a2hsHintDismissed";
-    const standalone = navigator.standalone === true ||
-      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
-    const ua = navigator.userAgent;
-    const isIOS = /iP(hone|od|ad)/.test(ua) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); // iPadOS poses as Mac
-    const isSafari = !/CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua); // not Chrome/Firefox/Edge/Opera/Google-app on iOS
-    let dismissed = false;
-    try { dismissed = localStorage.getItem(HINT_KEY) === "1"; } catch (e) {}
-    if (standalone || !isIOS || !isSafari || dismissed) return; // already fullscreen, or N/A
-    hint.classList.remove("hidden");
-    dismiss.addEventListener("click", () => {
-      hint.classList.add("hidden");
-      try { localStorage.setItem(HINT_KEY, "1"); } catch (e) {}
-    });
-  }
-
   // ---------- Boot ----------
   resize();
   updateHud();
   applyWaterTheme(); // apply the saved waterfall colour (ring var + first paint)
-  initA2HSHint();
   requestAnimationFrame(tick);
 })();
 </script>
